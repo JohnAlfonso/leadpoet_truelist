@@ -1,0 +1,122 @@
+# Core Bittensor dependencies
+bittensor
+
+# HTTP and networking
+requests
+aiohttp
+aiodns
+pysocks  # SOCKS5 proxy support for DNS queries
+
+# Data processing and ML
+numpy
+pandas
+# torch[cpu]>=2.0.0  # DEPRECATED: Only needed for unused collusion detection
+# torch_geometric>=2.4.0  # DEPRECATED: Only needed for unused collusion detection
+# pygod>=1.1.0  # DEPRECATED: Only needed for unused collusion detection
+
+# DNS
+dnspython
+
+# Caching and storage
+redis
+pickle-mixin
+boto3
+arweave-python-client
+
+# Monitoring and metrics
+prometheus_client
+structlog
+
+# Retry and resilience
+tenacity
+
+# Environment and configuration
+python-dotenv
+pyyaml
+
+# Web framework
+starlette
+pydantic
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Utilities
+rich
+argparse
+click
+
+# Testing
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+
+# Setuptools
+setuptools
+
+# Google Cloud
+google-cloud-firestore
+google-auth
+firebase-admin
+
+# Miner-specific
+bt
+bittensor-cli
+
+# Code quality and linting
+flake8
+black
+isort
+
+# Code coverage
+coverage
+
+# Additional utilities
+typing-extensions
+python-Levenshtein
+
+# Enhanced validation dependencies
+python-whois
+fuzzywuzzy
+
+# Core dependencies
+httpx
+openrouter
+firecrawl
+openai
+
+phonenumbers
+portalocker
+publicsuffix2
+
+# Schema validation and configuration
+jsonschema
+PyYAML
+
+# throwaway email blocklist
+disposable-email-domains
+
+# JWT Token Management
+pyjwt
+
+# TEE Attestation Verification (for miners/validators)
+cbor2
+cryptography
+
+# Supabase (for future migration)
+supabase
+
+# Lead Sorcerer additional dependencies (if not already listed above)
+# Note: Most Lead Sorcerer dependencies are already included above
+# These are additional ones that might be needed:
+nest-asyncio
+websockets
+
+# gRPC communication (for miner/validator nodes)
+grpcio
+# ddgs>=6.0.0  # REMOVED - using ScrapingDog API instead
+
+# Geographic normalization (city/state/country standardization)
+us # US state lookup (offline, no rate limits)
+geonamescache # 786k+ city name variations (offline, no rate limits)
