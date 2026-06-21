@@ -610,6 +610,36 @@ async def update_database_nonus(persons, results, email_to_person_map, sentinels
         sn71_db_person_nonus_update_email, sn71_db_failed_person_nonus_update_email)
 
 
+async def process_us_once():
+    """Run a single US email-check cycle: prepare → verify → update.
+
+    Used as a fallback by the non-US loop when no non-US persons are available.
+    Returns True if a US batch was processed (even if verification failed),
+    False if there were no US persons to process either.
+    """
+    global in_progress_person_ids
+
+    batch_data = await prepare_batch()
+    if not batch_data:
+        return False
+
+    persons, all_emails, email_to_person_map, gen_time, sentinels = batch_data
+    current_person_ids = {p['id'] for p in persons}
+    in_progress_person_ids.update(current_person_ids)
+
+    print("=" * 100)
+    print("🔄 US BATCH (interleaved while non-US queue is empty) - verifying...")
+
+    results = await verify_batch(all_emails, email_to_person_map)
+    if not results:
+        print("   ⚠️  Skipping US database update due to verification failure")
+        return True  # work was attempted; leave persons tracked for cleanup
+
+    await update_database(persons, results, email_to_person_map, sentinels)
+    in_progress_person_ids.difference_update(current_person_ids)
+    return True
+
+
 async def main_e_check_nonus():
     """
     Pipelined email check workflow for non-US persons (sn71_person_nonus).
@@ -618,9 +648,12 @@ async def main_e_check_nonus():
       sn71_person_nonus  (persons)
       sn71_company_nonus (companies, joined for resp_score)
 
+    When the non-US queue is empty, runs one US batch (process_us_once) and then
+    retries non-US — so the worker never idles while US work remains.
+
     Supports graceful shutdown on Ctrl+C.
     """
-    global in_progress_nonus_person_ids, shutdown_requested
+    global in_progress_nonus_person_ids, in_progress_person_ids, shutdown_requested
 
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -647,8 +680,11 @@ async def main_e_check_nonus():
                 batch_data = await prepare_batch_nonus()
 
             if not batch_data:
-                print(f"\n⏳ No non-US persons to process. Waiting 5 seconds before retry...")
-                await asyncio.sleep(5)
+                print(f"\n⏳ No non-US persons to process. Running one US batch, then retrying non-US...")
+                processed_us = await process_us_once()
+                if not processed_us:
+                    print(f"⏳ No US persons either. Waiting 5 seconds before retry...")
+                    await asyncio.sleep(5)
                 continue
 
             batch_num += 1
@@ -704,6 +740,10 @@ async def main_e_check_nonus():
                 print(f"   ✅ Non-US batch preparation cancelled")
 
         reset_seen_for_uncompleted_nonus_persons(in_progress_nonus_person_ids)
+
+        # Also release any US persons picked up by interleaved process_us_once()
+        if in_progress_person_ids:
+            reset_seen_for_uncompleted_persons(in_progress_person_ids)
 
         print(f"✅ Non-US shutdown complete. Goodbye!")
 
